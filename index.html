@@ -1,0 +1,54 @@
+<!doctype html>
+<html>
+<head>
+    <title>Jerry Sahlins test with many polygons with  leaflet, earcut and  WebGL</title>
+    <meta charset="utf-8">
+    <link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.7.2/leaflet.css" />
+    <style>
+        html, body {
+            height: 100%;
+            padding: 0;
+            margin: 0;
+            background: rgb(14, 21, 30);
+            height: 100%;
+        }
+
+        #map {
+            position: absolute;
+            height: 100%;
+            width: 100%;
+            background-color: #333;
+        }
+    </style>  
+</head>
+<body>
+    <div id="map"></div>
+    <script src="http://www.sumbera.com/gist/data/CZDistricts.js"></script> 
+    <script src="http://cdn.leafletjs.com/leaflet-0.7.2/leaflet.js"></script>
+    <script src="js/threadpool.min.js" ></script>
+    <script src="js/shp.min.js" ></script>
+    <script src="js/earcut-1.4.2.js"></script>
+    <script src="js/L.Webgl.js"></script>
+
+    <script>
+
+        (function() {
+            var leafletMap = L.map('map').setView([63.253412, 15.424805], 4);
+            L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
+            }).addTo(leafletMap);
+            
+            var glLayer = new L.Webgl();
+            glLayer.addTo(leafletMap);
+           // glLayer.loadGeoJson('data/geojson/haro_simple.geojson');
+           // glLayer.loadGeoJson(data);
+           // glLayer.loadGeoJson('data/geojson/aroy_wgs84.geojson');
+            glLayer.loadShapeFile('data/shape/haro_wgs84.zip');
+           //glLayer.loadShapeFile('data/shape/aroy2010_simpleWGS84.zip');
+
+        })();
+
+
+    </script>
+</body>
+</html>
