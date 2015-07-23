@@ -1,8 +1,8 @@
 
 /*
     Jerry Sahlin 2015-07-08
-  inspired & portions taken from  : https://gist.github.com/Sumbera  
-
+    A lot of code taken from Stanislav Sumbera excellent work : https://gist.github.com/Sumbera  
+    
 */
 
 
@@ -191,13 +191,52 @@ L.Webgl = L.Class.extend({
         });
  
     },    
+    loadData : function(data) {
+        var features = data.features;
+        var self = this;
+        var coords = null;
+
+        
+        for(var i = 0; i < features.length; i++){
+            var feature = features[i];
+            
+
+            var type = feature.geometry.type;
+                
+            if(typeof type !== 'undefined'){
+
+                switch(type) {
+                    case 'Polygon' :
+                        coords = feature.geometry.coordinates[0];
+                        break;
+
+                    case 'MultiPolygon' :
+                        coords = feature.geometry.coordinates[0][0];             
+                        break;
+
+                    case 'Point' :
+                        coords = feature.geometry.coordinates; 
+                        break;
+
+
+                }
+                self.verts = self.verts.concat(makeVerts(coords));
+            }     
+          
+        }        
+        
+        self.renderWebgl(self.verts);
+    },
  
-    loadData : function (data) {
+    loadWithWorkers : function (data) {
         
         var features = data.features;
         var self = this;
         var coords = null;
         var pool = new ThreadPool(features.length);
+        
+        pool.allDone(allDone);
+        
         var workers = 0;
         
         for(var i = 0; i < features.length; i++){
@@ -233,6 +272,9 @@ L.Webgl = L.Class.extend({
               });          
           
         }
+        function allDone(e) {
+            self.renderWebgl(self.verts);
+        }
         
         function workerResult(e) {
             workers--;
@@ -242,9 +284,11 @@ L.Webgl = L.Class.extend({
             } else {
                 self.verts = self.verts.concat(arr); 
             }
-            if(workers == 0)
-                self.renderWebgl(self.verts);
+          //  if(workers == 0)
+          //      self.renderWebgl(self.verts);
         } 
+        
+        
     },    
     
 
@@ -268,9 +312,7 @@ L.Webgl = L.Class.extend({
         }
     },
     
-
-    
-        /**
+    /**
      * Compiles a vertex or fragment shader from the supplied source code.
      * @param {string} src
      * @param {!WebGLShader} shader
@@ -293,31 +335,25 @@ L.Webgl = L.Class.extend({
 
         this.pixelsToWebGLMatrix = new Float32Array(16);
         this.mapMatrix = new Float32Array(16);
-  
         
            // -- WebGl setup     
-        var vertexShader = this.gl.createShader(this.gl.VERTEX_SHADER); //this.getShader(this.gl,'vshader');
-        var fragmentShader = this.gl.createShader(this.gl.FRAGMENT_SHADER); //this.getShader(this.gl,'fshader');
+        var vertexShader = this.gl.createShader(this.gl.VERTEX_SHADER); 
+        var fragmentShader = this.gl.createShader(this.gl.FRAGMENT_SHADER); 
         this.compileShader(this.getVertexShaderSource(),vertexShader);
         this.compileShader(this.getFragmentShaderSource(),fragmentShader);
-
-
+        
         // link shaders to create our program
         this.program = this.gl.createProgram();
         this.gl.attachShader(this.program, vertexShader);
         this.gl.attachShader(this.program, fragmentShader);
         this.gl.linkProgram(this.program);
         this.gl.useProgram(this.program);
-
-
-         
     },
     
     renderWebgl : function (verts) {
         this.gl.blendFunc(this.gl.SRC_ALPHA, this.gl.ONE_MINUS_SRC_ALPHA);
         this.gl.enable(this.gl.BLEND);
-        //  gl.disable(gl.DEPTH_TEST);
-        // ----------------------------
+
         // look up the locations for the inputs to our shaders.
         this.u_matLoc = this.gl.getUniformLocation(this.program, "u_matrix");
         this.gl.aPointSize = this.gl.getAttribLocation(this.program, "a_pointSize");
@@ -417,92 +453,7 @@ L.Webgl = L.Class.extend({
         matrix[5] *= scaleY;
         matrix[6] *= scaleY;
         matrix[7] *= scaleY;
-    },
-    getShader: function (gl, id) {
-        var shaderScript, theSource, currentChild, shader;
-
-        shaderScript = document.getElementById(id);
-
-        if (!shaderScript) {
-        return null;
-        }
-
-        theSource = "";
-        currentChild = shaderScript.firstChild;
-
-        while(currentChild) {
-        if (currentChild.nodeType == currentChild.TEXT_NODE) {
-          theSource += currentChild.textContent;
-        }
-
-        currentChild = currentChild.nextSibling;
-        }
-
-        if (shaderScript.type == "x-shader/x-fragment") {
-            shader = gl.createShader(gl.FRAGMENT_SHADER);
-        } else if (shaderScript.type == "x-shader/x-vertex") {
-            shader = gl.createShader(gl.VERTEX_SHADER);
-        } else {
-         return null;
-        }
-
-        gl.shaderSource(shader, theSource);
-        gl.compileShader(shader);  
-        if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {  
-          alert("An error occurred compiling the shaders: " + gl.getShaderInfoLog(shader));  
-          return null;  
-        }
-
-        return shader;
-    },   
-    
-    getWorker : function() {
-       
-        var script = [
-            "       importScripts('earcut-1.4.2.js');",
-            "        self.addEventListener('message', function(e) {",
-            "          var data = e.data;",
-            "          switch (data.cmd) {",
-            "            case 'start':      ",   
-            "                  var result = makeVerts(data.data);",
-            "                  postMessage(result);",
-            "                  self.close();",
-            "              break;",
-            "            case 'stop':",
-            "                  self.close();",
-            "                  break;",
-            "          }",
-            "        });",
-            "        function makeVerts(coords) {",
-            "            var verts = new Array();",
-            "            var rawVerts = [];",
-            "            for (var i = 0; i < coords.length; i++) {",
-            "                rawVerts.push([coords[i][1], coords[i][0]]);",
-            "            }",
-            "           var currentColor = [Math.random(), Math.random(), Math.random()]; //[0.1, 0.6, 0.1];",
-            "            if(rawVerts.length != 0)",
-            "                var triangles = earcut([rawVerts]);",
-            "            if(typeof triangles !== 'undefined' &&  triangles != null) {",
-            "                for (var i = 0; i < triangles.length; i++) {",
-            "                    var pixel = LatLongToPixelXY(triangles[i][0], triangles[i][1]);",
-            "                    verts.push(pixel.x, pixel.y, currentColor[0], currentColor[1], currentColor[2]);",
-            "                }        ",
-            "            }        ",
-            "            return verts;",
-            "        }",
-            "        function LatLongToPixelXY(latitude, longitude) {",
-            "            var pi_180 = Math.PI / 180.0;",
-            "            var pi_4 = Math.PI * 4;",
-            "            var sinLatitude = Math.sin(latitude * pi_180);",
-            "            var pixelY = (0.5 - Math.log((1 + sinLatitude) / (1 - sinLatitude)) / (pi_4)) * 256;",
-            "            var pixelX = ((longitude + 180) / 360) * 256;",
-            "            var pixel = { x: pixelX, y: pixelY };",
-            "            return pixel;",
-            "        }"          
-                    ].join('\n');
-        
-        var blob = new Blob([script], { type: "text/javascript" })
-        return window.URL.createObjectURL(blob);
     }
+
 });
 

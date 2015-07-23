@@ -41,10 +41,14 @@
             
             var glLayer = new L.Webgl();
             glLayer.addTo(leafletMap);
-           // glLayer.loadGeoJson('data/geojson/haro_simple.geojson');
-           // glLayer.loadGeoJson(data);
+            
+            /* Performance test: */
+            /* 1. without workers */ //glLayer.loadGeoJson(data);            
+            /* 2. with workers */    glLayer.loadWithWorkers(data);
+            
+            //glLayer.loadGeoJson('data/geojson/haro_simple.geojson');
            // glLayer.loadGeoJson('data/geojson/aroy_wgs84.geojson');
-            glLayer.loadShapeFile('data/shape/haro_wgs84.zip');
+           // glLayer.loadShapeFile('data/shape/haro_wgs84.zip');
            //glLayer.loadShapeFile('data/shape/aroy2010_simpleWGS84.zip');
 
         })();

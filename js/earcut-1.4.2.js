@@ -14,7 +14,7 @@ self.addEventListener('message', function(e) {
     case 'start':         
           var result = makeVerts(data.data);
           postMessage(result);
-        //  self.close();
+          self.close();
       break;
     case 'stop':
           self.close();
