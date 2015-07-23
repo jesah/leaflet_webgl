@@ -234,9 +234,7 @@ L.Webgl = L.Class.extend({
         var self = this;
         var coords = null;
         var pool = new ThreadPool(features.length);
-        
-        pool.allDone(allDone);
-        
+                
         var workers = 0;
         
         for(var i = 0; i < features.length; i++){
@@ -272,6 +270,7 @@ L.Webgl = L.Class.extend({
               });          
           
         }
+        pool.allDone(allDone);
         function allDone(e) {
             self.renderWebgl(self.verts);
         }

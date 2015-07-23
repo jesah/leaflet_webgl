@@ -26,7 +26,7 @@
     <script src="http://www.sumbera.com/gist/data/CZDistricts.js"></script> 
     <script src="http://cdn.leafletjs.com/leaflet-0.7.2/leaflet.js"></script>
     <script src="http://www.sumbera.com/gist/js/vt/geojson-vt-dev.js"></script>
-    <script src="js/threadpool.min.js" ></script>
+    <script src="js/threadpool.js" ></script>
     <script src="js/shp.min.js" ></script>
     <script src="js/earcut-1.4.2.js"></script>
     <script src="js/L.Webgl.js"></script>
@@ -45,6 +45,10 @@
             /* Performance test: */
             /* 1. without workers */ //glLayer.loadGeoJson(data);            
             /* 2. with workers */    glLayer.loadWithWorkers(data);
+            
+            /* enormous geojson file 134 Mb with over 35000 polygons
+            'https://drive.google.com/file/d/0B6zngQVC9PLEcW05aWlxdU12Rlk/view?usp=sharing'
+            */
             
             //glLayer.loadGeoJson('data/geojson/haro_simple.geojson');
            // glLayer.loadGeoJson('data/geojson/aroy_wgs84.geojson');
