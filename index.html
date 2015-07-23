@@ -42,18 +42,16 @@
             var glLayer = new L.Webgl();
             glLayer.addTo(leafletMap);
             
-            /* Performance test: */
-            /* 1. without workers */ //glLayer.loadGeoJson(data);            
-            /* 2. with workers */    glLayer.loadWithWorkers(data);
             
-            /* enormous geojson file 134 Mb with over 35000 polygons
-            'https://drive.google.com/file/d/0B6zngQVC9PLEcW05aWlxdU12Rlk/view?usp=sharing'
+            /* Big shapefile to play with:
+            http://www.smhi.se/polopoly_fs/1.24469!/Menu/general/extGroup/attachmentColHold/mainCol1/file/aro_y_2012_2.zip
+            
+            Taken from:
+            http://www.smhi.se/klimatdata/hydrologi/sjoar-och-vattendrag/ladda-ner-data-fran-svenskt-vattenarkiv-1.20127
             */
             
-            //glLayer.loadGeoJson('data/geojson/haro_simple.geojson');
-           // glLayer.loadGeoJson('data/geojson/aroy_wgs84.geojson');
-           // glLayer.loadShapeFile('data/shape/haro_wgs84.zip');
-           //glLayer.loadShapeFile('data/shape/aroy2010_simpleWGS84.zip');
+           // glLayer.loadGeoJson('data/geojson/haro_simple.geojson',0);
+            glLayer.loadShapeFile('data/shape/haro_WGS84.zip',10);
 
         })();
 

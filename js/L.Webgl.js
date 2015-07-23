@@ -159,7 +159,14 @@ L.Webgl = L.Class.extend({
 
     },
     
-   loadGeoJson : function (url){
+    /**
+     * Loads geojson over http or as an object, provide numbers of workers to work with web workers.
+     * @param {string} url
+     * @param {number} workers 
+     * @return {void}
+     * @private
+     */
+   loadGeoJson : function (url,workers){
        var self = this;
        if(typeof url === 'string' || url instanceof String) {
           var req = new XMLHttpRequest();           
@@ -167,7 +174,12 @@ L.Webgl = L.Class.extend({
           req.onreadystatechange = function() {
             if (this.readyState == 4 ) {
                if(this.status == 200){
-                   self.loadData(JSON.parse(this.responseText));
+                   var geojson = JSON.parse(this.responseText);
+                    if(Number.isInteger(workers) && workers != 0) {
+                        self.loadWithWorkers(geojson,workers);
+                    } else {
+                        self.loadData(geojson);
+                    }
 
                }
             }
@@ -177,17 +189,34 @@ L.Webgl = L.Class.extend({
           req.send();       
        
        } else {
-            self.loadData(url);
+           
+            if(Number.isInteger(workers) && workers != 0) {
+                self.loadWithWorkers(url,workers);
+            } else {
+                self.loadData(url);
+            }
        }
 
     }, 
     
-    loadShapeFile : function(url) {     
+    /**
+     * uploads and unzip a shapefile, provide numbers of workers to work with web workers.
+     * @param {string} url
+     * @param {number} workers 
+     * @return {void}
+     * @private
+     */    
+    loadShapeFile : function(url,workers) {     
         var self = this;
 
         shp(url).then(function(geojson){
             console.log("Shapefile loaded, processing data");
-            self.loadData(geojson);
+            if(Number.isInteger(workers) && workers != 0) {
+                self.loadWithWorkers(geojson,workers);
+            } else {
+                self.loadData(geojson);
+            }
+            
         });
  
     },    
@@ -228,19 +257,31 @@ L.Webgl = L.Class.extend({
         self.renderWebgl(self.verts);
     },
  
-    loadWithWorkers : function (data) {
+    loadWithWorkers : function (data,workers) {
         
         var features = data.features;
         var self = this;
         var coords = null;
-        var pool = new ThreadPool(features.length);
-                
-        var workers = 0;
+        var pool = new ThreadPool(workers);
+        
+        pool.allDone( function() {
+            self.renderWebgl(self.verts);
+        });  
+        pool.done(function(result) {
+            workerResult(result);
+        }); 
+        
+        function workerResult(arr) {
+            workers--;
+            if(self.verts.length == 0) {
+                self.verts = arr;
+            } else {
+                self.verts = self.verts.concat(arr); 
+            }    
+        }                
         
         for(var i = 0; i < features.length; i++){
             var feature = features[i];
-            
-
             var type = feature.geometry.type;
                 
             if(typeof type !== 'undefined'){
@@ -257,36 +298,11 @@ L.Webgl = L.Class.extend({
                     case 'Point' :
                         coords = feature.geometry.coordinates; 
                         break;
-
-
                 }
             }
-            workers++;
-     
-            pool
-              .run("js/earcut-1.4.2.js",{'cmd': 'start', 'data': coords})
-              .done(function(result) {
-                workerResult(result);
-              });          
-          
+            workers++;     
+            pool.run("js/earcut-1.4.2.js",{'cmd': 'start', 'data': coords}); 
         }
-        pool.allDone(allDone);
-        function allDone(e) {
-            self.renderWebgl(self.verts);
-        }
-        
-        function workerResult(e) {
-            workers--;
-            var arr = e;
-            if(self.verts.length == 0) {
-                self.verts = arr;
-            } else {
-                self.verts = self.verts.concat(arr); 
-            }
-          //  if(workers == 0)
-          //      self.renderWebgl(self.verts);
-        } 
-        
         
     },    
     
@@ -452,7 +468,14 @@ L.Webgl = L.Class.extend({
         matrix[5] *= scaleY;
         matrix[6] *= scaleY;
         matrix[7] *= scaleY;
-    }
+    }    
+
 
 });
+
+Number.isInteger = Number.isInteger || function(value) {
+return typeof value === "number" && 
+       isFinite(value) && 
+       Math.floor(value) === value;
+};
 
